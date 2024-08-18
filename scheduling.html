@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+      }
+      .container {
+        padding: 10px;
+      }
+      .title {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 10px;
+      }
+      .text-content {
+        margin-bottom: 20px;
+      }
+      .button {
+        background-color: #4CAF50; /* Green */
+        border: none;
+        color: white;
+        padding: 10px 20px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        cursor: pointer;
+        border-radius: 5px;
+      }
+      /* CSS for Dropdown */
+      .dropdown {
+          position: relative;
+          display: inline-block;
+      }
+
+      .dropdown-title {
+          cursor: pointer;
+      }
+
+      .dropdown-content {
+          display: none;
+          position: absolute;
+          background-color: #f9f9f9;
+          min-width: 160px;
+          box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+          padding: 12px 16px;
+          z-index: 1;
+      }
+
+      .dropdown-content ul {
+          list-style-type: none;
+          padding: 0;
+          margin: 0;
+      }
+
+      .dropdown-content ul li {
+          padding: 8px 0;
+      }
+
+      .dropdown-content ul li strong {
+          font-weight: bold;
+      }
+
+      /* Show the dropdown content on hover */
+      .dropdown:hover .dropdown-content {
+          display: block;
+      }
+
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="title">Formatted Scheduler</div>
+      <div class="text-content">
+        This is a custom Add-On designed to automate Leslie's scheduling process! Click the button below to load, format, and view all responses recieved by this form. After clicking, this page will be populated with names of responders: "Full Availability," "Some Availability," & "No Availability."
+      </div>
+      <div class="text-content">
+        Hint: use your mouse to hover over each "Not Avaiable" title to see who's has no availability during the given session.
+      </div>
+      <div class="text-content" id="namesContainer">
+
+      </div>
+      <button class="button" id="getAndFormatButton" onclick="getAndFormatResponses()">Click Me</button>
+    </div>
+    <script>
+
+      function formatResponses(result) {
+          // @param result: [{title: string, fullAvailable: [{name: string, availability: string[], unavailability: []}], someAvailable: [{name: string, availability: string[], unavailability: string}], notAvailable: [{name: string, availability: [], unavailability: []}]}]
+
+          // Get the #textContent element
+          const textContentElement = document.getElementById('namesContainer');
+          
+          // Initialize an empty string to build the content
+          let content = "";
+
+          // Iterate over each session object in the result array
+          result.forEach(session => {
+              // Add the session title as the section title
+              content += `<h3>${session.title}</h3>`;
+              
+              // Full Availability Section
+              if (session.fullAvailable.length > 0) {
+                  content += `<h4>Fully Available</h4><ul>`;
+                  session.fullAvailable.forEach(item => {
+                      const name = item.name;
+                      const availability = item.availability.join(', ');
+                      content += `<li><strong>${name}</strong><br>`;
+                      content += `<span style="margin-left: 20px; font-size: smaller; color: green;">Available: ${availability}</span></li>`;
+                  });
+                  content += `</ul>`;
+              }
+
+              // Some Availability Section
+              if (session.someAvailable.length > 0) {
+                  content += `<h4>Some Availability</h4><ul>`;
+                  session.someAvailable.forEach(item => {
+                      const name = item.name;
+                      const availability = item.availability.join(', ');
+                      const unavailability = item.unavailability;
+                      content += `<li><strong>${name}</strong><br>`;
+                      content += `<span style="margin-left: 20px; font-size: smaller;">Available: ${availability}</span><br>`;
+                      content += `<span style="margin-left: 20px; font-size: smaller; color: red;">Unavailable: ${unavailability}</span></li>`;
+                  });
+                  content += `</ul>`;
+              }
+
+              // No Availability Section with Dropdown
+              if (session.notAvailable.length > 0) {
+                  content += `
+                      <div class="dropdown">
+                          <h4 class="dropdown-title">Not Available &#8681;</h4>
+                          <div class="dropdown-content">
+                              <ul>`;
+                  session.notAvailable.forEach(item => {
+                      const name = item.name;
+                      content += `<span style="font-size: 0.75rem; color: red;"><li><strong>${name}</strong></span></li>`;
+                  });
+                  content += `
+                              </ul>
+                          </div>
+                      </div>`;
+              }
+          });
+
+          // Set the content to the textContentElement
+          textContentElement.innerHTML = content;
+
+          // Update the button text to "Refresh"
+          document.querySelector('#getAndFormatButton').textContent = "Refresh";
+      }
+
+      function getAndFormatResponses() {
+        document.querySelector('#getAndFormatButton').textContent = "Working... this may take a minute.";
+        google.script.run.withSuccessHandler(formatResponses).getValidNames();
+      }
+    </script>
+  </body>
+</html>
